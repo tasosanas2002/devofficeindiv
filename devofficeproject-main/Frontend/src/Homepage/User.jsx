@@ -1,246 +1,299 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import { Link } from 'react-router-dom';
+
+const USER_NAV_ITEMS = [
+  { to: '/user', icon: 'bi-house-door', label: 'Overview' },
+  { to: '/frontroomuser', icon: 'bi-grid', label: 'Book a Seat' },
+  { to: '/chatuser', icon: 'bi-chat-dots', label: 'Meetings' },
+  { to: '/emailuser', icon: 'bi-envelope', label: 'Email' },
+];
 
 function User() {
-    const navigate = useNavigate();
-    const [last_booked, setLastBooked] = useState('');
-    const [booking, setBooking] = useState('');
-    const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
-    const [role, setRole] = useState('');
-    const [specialization, setSpecialization] = useState('');
-    const [avatar, setAvatar] = useState('');
-    const [firstname, setFirstname] = useState('');
-    const [lastname, setLastname] = useState('');
-    const [showUploadOptions, setShowUploadOptions] = useState(false); 
+  const navigate = useNavigate();
+  const [lastBooked, setLastBooked] = useState('');
+  const [booking, setBooking] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState('');
+  const [specialization, setSpecialization] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [firstname, setFirstname] = useState('');
+  const [lastname, setLastname] = useState('');
+  const [showUploadOptions, setShowUploadOptions] = useState(false);
+  const [file, setFile] = useState();
 
-    // Token Initialization
-    const handleAuth = () => {
-      axios.get('http://localhost:8081/checkauth', {
-          headers: {
-              'access-token': localStorage.getItem("token")
-          }
+  const fullName = `${firstname} ${lastname}`.trim() || username || 'Team Member';
+  const initials = fullName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('');
+
+  const handleAuth = () => {
+    axios
+      .get('http://localhost:8081/checkauth', {
+        headers: {
+          'access-token': localStorage.getItem('token'),
+        },
       })
-      .then(res => {
+      .then((res) => {
         setBooking(res.data.booking);
         setLastBooked(res.data.last_booked);
-          setUsername(res.data.username);
-          setAvatar(res.data.avatar);
-          setFirstname(res.data.firstname);
-          setLastname(res.data.lastname); 
-          setRole(res.data.role);
-          setEmail(res.data.email);
-          setSpecialization(res.data.specialization);
+        setUsername(res.data.username);
+        setAvatar(res.data.avatar);
+        setFirstname(res.data.firstname);
+        setLastname(res.data.lastname);
+        setRole(res.data.role);
+        setEmail(res.data.email);
+        setSpecialization(res.data.specialization);
       })
-      .catch(err => console.log(err));
+      .catch((err) => console.log(err));
   };
-  
 
-    const [file, setFile] = useState();
-    const handleFile = (e) => {
-      setFile(e.target.files[0]);
-    };
-    const handleUpload = () => {
-        const formdata = new FormData();
-        formdata.append('image', file);
-    
-        const token = localStorage.getItem('token');
-    
-        axios
-          .post('http://localhost:8081/upload', formdata, {
-            headers: {
-              'access-token': token,
-            },
-          })
-          .then((res) => {
-            if (res.data.Status === 'Success') {
-              console.log('Succeeded');
-            } else {
-              console.log('Failed');
-            }
-          })
-          .catch((err) => console.log(err));
-      };
+  const handleFile = (e) => {
+    setFile(e.target.files[0]);
+  };
 
-    // Logout function
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        navigate('/');
-    };
+  const handleUpload = () => {
+    if (!file) {
+      return;
+    }
 
-    useEffect(() => {
-        handleAuth();  
-    }, []);
+    const formdata = new FormData();
+    formdata.append('image', file);
 
-    // Inside your React component
-// Inside your React component
-useEffect(() => {
-  // Fetch all seats data
-  axios.get('http://localhost:8081/seats')
-  .then(res => {
-      // Filter out the data for seat 6
-      const seat20 = res.data.find(seat => seat.seatnumber === 20);
-      if (seat20) {
-          // Extract the date portion without the time
+    axios
+      .post('http://localhost:8081/upload', formdata, {
+        headers: {
+          'access-token': localStorage.getItem('token'),
+        },
+      })
+      .then((res) => {
+        if (res.data.Status === 'Success') {
+          handleAuth();
+          setShowUploadOptions(false);
+        }
+      })
+      .catch((err) => console.log(err));
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    navigate('/');
+  };
+
+  useEffect(() => {
+    handleAuth();
+  }, []);
+
+  useEffect(() => {
+    axios
+      .get('http://localhost:8081/seats')
+      .then((res) => {
+        const seat20 = res.data.find((seat) => seat.seatnumber === 20);
+        if (seat20?.last_booked) {
           const lastBookedDate = new Date(seat20.last_booked).toISOString().split('T')[0];
           setLastBooked(lastBookedDate);
-      }
-  })
-  .catch(err => console.log(err));
-}, []);
+        }
+      })
+      .catch((err) => console.log(err));
+  }, []);
 
-
-
-    const openGmail = () => {
-      window.open('https://mail.google.com/', '_blank');
+  const openGmail = () => {
+    window.open('https://mail.google.com/', '_blank');
   };
-    return (
-        <div className='container-fluid'>
-            <div className='row'>
-                <div className='bg-dark col-auto col-md-3 min-vh-100'>
-                    <a className='text-decoration-none text-white d-flex align-itemcenter ms-3 mt-2'>
-                        <i className='bi bi-react'></i>
-                        <strong className='ms-1 fs-4'>Devoffice</strong>
-                    </a>
-                    <hr />
-                    <ul className='nav nav-pills flex-column'>
-                        <li className='nav-item text-white fs-4'>
-                            <Link to="/user" className='nav-link text-white fs-5' aria-current='page'>
-                                <i className='bi bi-house'></i>
-                                <span className='ms-2'>Home</span>
-                            </Link>
-                        </li>
 
-                        <li className='nav-item text-white fs-4'>
-                        <Link to="/frontroomuser" className='nav-link text-white fs-5' aria-current='page'>
-                                <i className='bi bi-calendar'></i>
-                                <span className='ms-2'>Book a seat</span>
-                            </Link>
-                        </li>
-                        <li className='nav-item text-white fs-4'>
-                            <a href="/chatuser" className='nav-link text-white fs-5' aria-current='page'>
-                                <i className='bi bi-chat'></i>
-                                <span className='ms-2'>DevOffice Meetings</span>
-                            </a>
-                        </li>
-                        <li className='nav-item text-white fs-4'>
-                            <a href="/emailuser" className='nav-link text-white fs-5' aria-current='page'>
-                                <i className='bi bi-envelope'></i>
-                                <span className='ms-2'>Email</span>
-                            </a>
-                        </li>
-                    </ul>
-                    <div className="d-flex align-items-center">
-                        <div style={{ width: '50px', height: '50px', borderRadius: '50%', marginLeft: '70px', marginBottom: '-120px' }}
-                          className="text-white fs-4 me-2"
-                          onClick={() => setShowUploadOptions(!showUploadOptions)} // Toggle upload options
-                        >
-                          <span style={{ fontSize: '20px' }}>{username}</span>
-                          
-                          <div style={{ marginLeft: '120px', marginTop: '-48px' }}>
-                           <button className='btn btn-danger mt-3 ms-3' onClick={handleLogout}>Logout</button>
-                          </div>
+  return (
+    <div className="dashboard-shell">
+      <aside className="dashboard-sidebar">
+        <div className="dashboard-brand">
+          <div className="dashboard-brand-mark">
+            <i className="bi bi-buildings" />
+          </div>
+          <div>
+            <div>DevOffice</div>
+            <small>User workspace</small>
+          </div>
+        </div>
 
-                        </div>
-                        <div className="avatar-container">
-                          {avatar && (
-                            <img
-                              src={`http://localhost:8081/images/${avatar}`}
-                              alt="Avatar"
-                              style={{ width: '47px', height: '47px', borderRadius: '30%',border: '3px solid #f0f0f0',boxShadow: '0 0 30px rgba(255, 255, 255, 0.5)', marginLeft: '-120px', marginBottom: '-120px' }}
-                            />
-                          )}
-                        </div>
-                        {showUploadOptions && (
-                          <div>
-                            <input type="file" onChange={handleFile} />
-                            <button onClick={handleUpload}>Upload</button>
-                          </div>
-                        )}
-                      </div>
-                </div>
-                <div className="col-md-9 p-4">
-                <div style={{ background: 'linear-gradient(45deg, #000000, #424344)', color: 'white', padding: '20px', borderRadius: '10px', position: 'relative' }}>
-                <h1>Welcome Back</h1>
-                <p>We're glad to see you again, {username}!</p> 
-                <button
-                   className="btn btn-light"
-                  style={{ position: 'absolute', top: '20px', right: '20px' }}
-                   onClick={openGmail}
-                >
-        <i className="bi bi-envelope"></i>
-    </button>
-</div>
-                    <div style={{ background: 'linear-gradient(45deg, #000000, #424344)', color: 'white', padding: '10px', width:'353px', height:'503px', borderRadius: '10px', position: 'relative', top:'23px' }}>
+        <nav className="dashboard-nav">
+          {USER_NAV_ITEMS.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={`dashboard-nav-link${item.to === '/user' ? ' is-active' : ''}`}
+            >
+              <i className={`bi ${item.icon}`} />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
 
-                       
-                        <p style={{fontSize:'29px'}}>Profile</p>
-                        <br>
-
-                        </br>
-                        <button className='btn btn-primary'>Edit</button>
-                        <p>{avatar && (
-                            <img
-                              src={`http://localhost:8081/images/${avatar}`}
-                              alt="Avatar"
-                              style={{ width: '107px', height: '107px', borderRadius: '30%',border: '3px solid #f0f0f0',boxShadow: '0 0 30px rgba(255, 255, 255, 0.5)',position: 'relative', top:'-33px', left:'153px' }}
-                            />
-                            
-                          )}</p>
-                          
-                          <br>
-                          </br>
-                          
-
-                          <p>
-                            First name: {firstname}
-                          </p>
-
-                          <p>
-                            Last name: {lastname}
-                          </p>
-                          <p>
-                             username: {username}
-                          </p>
-                          <p>
-                            Email: {email}
-                          </p>
-                          <p>
-                            specialization: {specialization}
-                          </p>
-                          <p>
-                            Role: {role}
-                          </p>
-
-                          
-                    </div>
-                    
-                </div>
+        <div className="dashboard-user">
+          <div className="dashboard-user-top">
+            {avatar ? (
+              <img
+                className="dashboard-avatar"
+                src={`http://localhost:8081/images/${avatar}`}
+                alt="Avatar"
+              />
+            ) : (
+              <div className="dashboard-avatar-placeholder">{initials || 'U'}</div>
+            )}
+            <div className="dashboard-user-meta">
+              <strong>{fullName}</strong>
+              <span>{email || 'No email available'}</span>
             </div>
-            <div className="col-md-9 p-4">
-            <div style={{ background: 'linear-gradient(45deg, #000000, #424344)',fontSize:'16px', color: 'white', padding: '10px', width:'323px', height:'193px', borderRadius: '10px', position: 'relative', top:'-523px',left:'884px' }}>
-                    <p>Total Seat Reservations</p>
-                    <p style={{ fontSize: '64px' }}>8</p>
-                </div>
-            
-        </div>
+          </div>
 
-        <div className="col-md-9 p-4">
-            <div style={{ background: 'linear-gradient(45deg, #000000, #424344)',fontSize:'16px', color: 'white', padding: '10px', width:'332px', height:'193px', borderRadius: '10px', position: 'relative', top:'-523px',left:'884px' }}>
-                    <p>Upcoming Reservations(Booked)</p>
-                    <p style={{ fontSize: '34px' }}>{last_booked}</p>
+          <div className="dashboard-actions">
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={() => setShowUploadOptions((current) => !current)}
+            >
+              <i className="bi bi-camera" />
+              Update photo
+            </button>
+            <button type="button" className="danger-button" onClick={handleLogout}>
+              <i className="bi bi-box-arrow-right" />
+              Logout
+            </button>
+          </div>
+
+          {showUploadOptions && (
+            <div className="dashboard-upload">
+              <input className="dashboard-file" type="file" onChange={handleFile} />
+              <button type="button" className="secondary-button" onClick={handleUpload}>
+                Upload image
+              </button>
+            </div>
+          )}
+        </div>
+      </aside>
+
+      <main className="dashboard-main">
+        <section className="dashboard-hero">
+          <div>
+            <p className="auth-eyebrow">Workspace summary</p>
+            <h1>Stay organized without losing screen space.</h1>
+            <p>
+              Your dashboard now keeps profile details and booking information readable on
+              laptops, tablets, and smaller mobile screens.
+            </p>
+          </div>
+          <div className="dashboard-hero-actions">
+            <button type="button" className="primary-button" onClick={openGmail}>
+              <i className="bi bi-envelope-paper" />
+              Open Gmail
+            </button>
+            <Link to="/frontroomuser" className="ghost-button">
+              <i className="bi bi-calendar-check" />
+              Reserve a seat
+            </Link>
+          </div>
+        </section>
+
+        <section className="dashboard-content">
+          <div className="dashboard-column">
+            <article className="surface-card surface-card--dark">
+              <div className="section-heading">
+                <div>
+                  <h2>Profile</h2>
+                  <p>Your account details are grouped into a clean, scannable layout.</p>
                 </div>
-            
-        </div>
-        </div>
-        
-    );
-    
+              </div>
+
+              <div className="profile-summary">
+                {avatar ? (
+                  <img
+                    className="profile-avatar-large"
+                    src={`http://localhost:8081/images/${avatar}`}
+                    alt="Avatar"
+                  />
+                ) : (
+                  <div className="profile-avatar-fallback">{initials || 'U'}</div>
+                )}
+                <div>
+                  <h3>{fullName}</h3>
+                  <p>{specialization || 'Specialization not set'}</p>
+                </div>
+              </div>
+
+              <div className="profile-grid">
+                <div className="profile-field">
+                  <span>First name</span>
+                  <strong>{firstname || 'Not set'}</strong>
+                </div>
+                <div className="profile-field">
+                  <span>Last name</span>
+                  <strong>{lastname || 'Not set'}</strong>
+                </div>
+                <div className="profile-field">
+                  <span>Username</span>
+                  <strong>{username || 'Not set'}</strong>
+                </div>
+                <div className="profile-field">
+                  <span>Email</span>
+                  <strong>{email || 'Not set'}</strong>
+                </div>
+                <div className="profile-field">
+                  <span>Role</span>
+                  <strong>{role || 'Not set'}</strong>
+                </div>
+                <div className="profile-field">
+                  <span>Specialization</span>
+                  <strong>{specialization || 'Not set'}</strong>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div className="dashboard-column">
+            <div className="stats-grid">
+              <article className="stat-card">
+                <strong>Total seat reservations</strong>
+                <div className="stat-value">8</div>
+                <p className="stat-note">
+                  Summary cards now stack and resize instead of relying on fixed offsets.
+                </p>
+              </article>
+
+              <article className="stat-card">
+                <strong>Upcoming reservation</strong>
+                <div className="stat-value">{lastBooked || '--'}</div>
+                <p className="stat-note">Latest tracked booking date for your seat area.</p>
+              </article>
+
+              <article className="surface-card surface-card--dark">
+                <div className="section-heading">
+                  <div>
+                    <h3>Quick insight</h3>
+                    <p>Useful context surfaced in one place.</p>
+                  </div>
+                </div>
+                <div className="insight-list">
+                  <div className="insight-item">
+                    <strong>Booking status</strong>
+                    <p>{booking || 'No active booking state returned yet.'}</p>
+                  </div>
+                  <div className="insight-item">
+                    <strong>Workspace role</strong>
+                    <p>{role || 'Role not available.'}</p>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
 }
 
 export default User;
