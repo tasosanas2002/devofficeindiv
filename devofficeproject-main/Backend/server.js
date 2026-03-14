@@ -42,11 +42,11 @@ const db = mysql.createConnection({
 const verifyJwt = (req, res, next) => {
     const token = req.headers["access-token"]
     if (!token) {
-        return res.json("provide token next time")
+        return res.status(401).json({ error: "Missing access token" })
     } else {
         jwt.verify(token, "jwtSecretKey", (err, decoded) => {
             if (err) {
-                res.json("Not Authenticated")
+                return res.status(401).json({ error: "Not Authenticated" })
             } else {
                 req.userId = decoded.id;
                 next();
@@ -84,7 +84,14 @@ app.get('/users', (req, res) => {
 
 app.get('/seats', (req, res) => {
     const { date } = req.query; // Extract the selected date from the query parameters
-    const sql = "SELECT * FROM seats";
+    const sql = `
+        SELECT
+            seats.*,
+            users.avatar AS booked_avatar,
+            users.username AS booked_username
+        FROM seats
+        LEFT JOIN users ON seats.booked_by_user_id = users.id
+    `;
     db.query(sql, (err, data) => {
         if (err) return res.json(err);
 
@@ -174,8 +181,8 @@ app.post('/signup', (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-    const sql = "SELECT * FROM users WHERE `email` = ?";
-    db.query(sql, [req.body.email], (err, data) => {
+    const sql = "SELECT * FROM users WHERE `username` = ?";
+    db.query(sql, [req.body.username], (err, data) => {
         if (err) {
             console.error("Error executing SQL query:", err);
             return res.json("Error");
@@ -191,7 +198,7 @@ app.post('/login', (req, res) => {
                 console.log("bcrypt comparison result:", result);
                 if (result) {
                     const id = data[0].id;
-                    const token = jwt.sign({ id }, "jwtSecretKey", { expiresIn: 300 });
+                    const token = jwt.sign({ id }, "jwtSecretKey", { expiresIn: "1d" });
                     return res.json({ Login: true, token, data });
                 } else {
                     return res.json("Failure");
@@ -203,14 +210,13 @@ app.post('/login', (req, res) => {
     });
 });
 
-// Update the /updateseat/:id endpoint to include the selected date
-app.put('/updateseat/:id', (req, res) => {
+// Update the /updateseat/:id endpoint to include the selected date and booking owner
+app.put('/updateseat/:id', verifyJwt, (req, res) => {
     const { id } = req.params;
     const { selectedDate } = req.body;
+    const sql = "UPDATE seats SET status = 'occupied', last_booked = ?, booked_by_user_id = ? WHERE id = ?";
 
-    const sql = "UPDATE seats SET status = 'occupied', last_booked = ? WHERE id = ?";
-
-    db.query(sql, [selectedDate, id], (err, result) => {
+    db.query(sql, [selectedDate, req.userId, id], (err, result) => {
         if (err) {
             console.error('Error updating seat status:', err);
             return res.status(500).json({ error: "Error updating seat status" });
@@ -229,24 +235,6 @@ app.delete('/delete/:id', (req, res) => {
     db.query(sql, [id], (err, data) => {
         if (err) return res.json(err);
         return res.json("user deleted");
-    });
-});
-
-app.put('/updateseat/:id', (req, res) => {
-    const { id } = req.params;
-    const { selectedDate } = req.body; // Assuming selectedDate is sent from the frontend
-
-    // Update the SQL query to consider the selected date
-    const sql = "UPDATE seats SET status = 'occupied', last_booked = ? WHERE id = ?";
-
-    db.query(sql, [selectedDate, id], (err, result) => {
-        if (err) {
-            console.error('Error updating seat status:', err);
-            return res.status(500).json({ error: "Error updating seat status" });
-        }
-
-        console.log('Seat status updated successfully');
-        return res.status(200).json({ message: "Seat status updated successfully", data: result });
     });
 });
 

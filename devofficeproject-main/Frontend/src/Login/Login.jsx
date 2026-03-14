@@ -8,7 +8,7 @@ import './Login.css';
 
 function Login() {
   const [values, setValues] = useState({
-    email: '',
+    username: '',
     password: '',
     showPassword: false,
   });
@@ -30,7 +30,7 @@ function Login() {
     const validationErrors = Validation(values);
     setErrors(validationErrors);
 
-    if (validationErrors.email || validationErrors.password) {
+    if (validationErrors.username || validationErrors.password) {
       return;
     }
 
@@ -104,23 +104,23 @@ function Login() {
           <p className="auth-eyebrow">Welcome back</p>
           <h2 className="auth-title">Sign in to DevOffice</h2>
           <p className="auth-subtitle">
-            Use your email or username and continue to your dashboard.
+            Use your username and continue to your dashboard.
           </p>
 
           <form className="auth-form" onSubmit={handleSubmit}>
             <div className="auth-grid">
               <label className="field-group">
-                <span className="field-label">Email or username</span>
+                <span className="field-label">Username</span>
                 <input
                   className="field-control"
-                  type="email"
-                  name="email"
-                  id="email"
-                  placeholder="you@company.com"
-                  value={values.email}
+                  type="text"
+                  name="username"
+                  id="username"
+                  placeholder="Enter your username"
+                  value={values.username}
                   onChange={handleInput}
                 />
-                {errors.email && <div className="form-error">{errors.email}</div>}
+                {errors.username && <div className="form-error">{errors.username}</div>}
               </label>
 
               <label className="field-group">

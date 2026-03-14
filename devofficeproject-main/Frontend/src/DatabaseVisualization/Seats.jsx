@@ -1,84 +1,90 @@
-// eslint-disable-next-line no-unused-vars
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min';
+import { useNavigate } from 'react-router-dom';
+import AppShell from '../components/AppShell';
+
+const ADMIN_NAV_ITEMS = [
+  { to: '/admin', icon: 'bi-house-door', label: 'Overview' },
+  { to: '/signup', icon: 'bi-person-plus', label: 'Register User' },
+  { to: '/databasevis', icon: 'bi-database', label: 'Database' },
+  { to: '/frontroom', icon: 'bi-grid', label: 'Book a Seat' },
+  { to: '/chat', icon: 'bi-chat-dots', label: 'Meetings' },
+  { to: '/email', icon: 'bi-envelope', label: 'Email' },
+];
 
 function Seats() {
-    const [seats, setSeats] = useState([]);
-    const [selectedOption, setSelectedOption] = useState('Seats');
+  const [seats, setSeats] = useState([]);
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        axios.get('http://localhost:8081/seats') // Assuming the seats data is available at this endpoint
-            .then(res => setSeats(res.data))
-            .catch(err => console.log(err));
-    }, []);
+  useEffect(() => {
+    axios
+      .get('http://localhost:8081/seats')
+      .then((res) => setSeats(res.data))
+      .catch((err) => console.log(err));
+  }, []);
 
-    const navigate = useNavigate();
-
-    const handleDelete = (id) => {
-        axios.delete(`http://localhost:8081/seats/${id}`) // Assuming delete endpoint for seats
-            .then(() => {
-                setSeats(seats.filter(seat => seat.id !== id)); // Remove the deleted seat from the state
-            })
-            .catch(err => console.log(err));
-    };
-
-    const handleDropdownChange = (option) => {
-        setSelectedOption(option);
-        if (option === 'Users') {
-            navigate('/databasevis');
-        }
-    };
-
-    return (
-        <div className='d-flex vh-200 bg-primary justify-content-center align-items-center'>
-            <div className='w-100 bg-white rounded p-3'>
-                <div className="dropdown mb-3">
-                    <button className="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                        {selectedOption}
-                    </button>
-                    <ul className="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                        <li><button className="dropdown-item" onClick={() => handleDropdownChange('Users')}>Users</button></li>
-                        <li><button className="dropdown-item" onClick={() => handleDropdownChange('Seats')}>Seats</button></li>
-                        <li><button className="dropdown-item" onClick={() => setSelectedOption('Feedback')}>Feedback</button></li>
-                    </ul>
-                </div>
-                <table className='table'>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Seat Number</th>
-                            <th>Row</th>
-                            <th>Section</th>
-                            <th>Available</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {seats.map((data, i) => (
-                            <tr key={i}>
-                                <td>{data.id}</td>
-                                <td>{data.seatnumber}</td>
-                                <td>{data.status}</td>
-                                <td>{data.description}</td>
-                                <td>{data.last_booked}</td>
-                                <td>
-                                    <Link to={`/update-seat/${data.id}`}>
-                                        <span className="me-1"><i className="bi bi-pencil"></i></span>
-                                    </Link>
-                                    <button onClick={() => handleDelete(data.id)} className='btn btn-danger fs-13'>
-                                        <span className="me-1"><i className="bi bi-trash"></i></span>
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+  return (
+    <AppShell
+      brandSubtitle="Admin workspace"
+      navItems={ADMIN_NAV_ITEMS}
+      activePath="/databasevis"
+      heroEyebrow="Seat database"
+      heroTitle="Monitor seat inventory from the same admin system."
+      heroSubtitle="Seat records are surfaced with the same visual hierarchy as user management."
+      heroActions={
+        <div className="workspace-toolbar">
+          <button type="button" className="secondary-button" onClick={() => navigate('/databasevis')}>
+            <i className="bi bi-people" />
+            View users
+          </button>
+          <button type="button" className="ghost-button" onClick={() => navigate('/frontroom')}>
+            <i className="bi bi-grid" />
+            Open map
+          </button>
         </div>
-    );
+      }
+    >
+      <section className="workspace-card">
+        <div className="workspace-card-header">
+          <div>
+            <h2>Seat table</h2>
+            <p>Inventory and booking-state view for the office floor.</p>
+          </div>
+          <div className="workspace-pill">
+            <i className="bi bi-layout-text-window-reverse" />
+            {seats.length} seats
+          </div>
+        </div>
+
+        <div className="workspace-table-wrap">
+          <table className="workspace-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Seat number</th>
+                <th>Status</th>
+                <th>Last booked</th>
+              </tr>
+            </thead>
+            <tbody>
+              {seats.map((seat) => (
+                <tr key={seat.id}>
+                  <td>{seat.id}</td>
+                  <td>{seat.seatnumber}</td>
+                  <td>
+                    <span className="workspace-badge">
+                      {seat.status || 'available'}
+                    </span>
+                  </td>
+                  <td>{seat.last_booked || 'Not booked yet'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </AppShell>
+  );
 }
 
 export default Seats;

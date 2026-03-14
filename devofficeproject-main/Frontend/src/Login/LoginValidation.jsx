@@ -1,28 +1,25 @@
-// eslint-disable-next-line no-unused-vars
-function Validation(values){
-    let error = {}
-    const email_patern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    const password_pattern = /^(?=.*\d)(?=.*[A-Z])[a-zA-Z0-9]{8,}$/
+function Validation(values) {
+  const error = {};
+  const usernamePattern = /^[a-zA-Z0-9._-]{3,}$/;
+  const passwordPattern = /^(?=.*\d)(?=.*[A-Z])[a-zA-Z0-9]{8,}$/;
 
-if(values.email === ""){
-    error.email = "Email Field should not be empty"
-}
-else if(!email_patern.test(values.email)){
-    error.email = "Email didnt match"
-}else{
-    error.email=""
-}
+  if (values.username === '') {
+    error.username = 'Username field should not be empty';
+  } else if (!usernamePattern.test(values.username)) {
+    error.username = 'Username must be at least 3 characters';
+  } else {
+    error.username = '';
+  }
 
-if(values.password === ""){
-    error.password = "Password field should not be empty"
-}
+  if (values.password === '') {
+    error.password = 'Password field should not be empty';
+  } else if (!passwordPattern.test(values.password)) {
+    error.password = 'Password is wrong';
+  } else {
+    error.password = '';
+  }
 
-else if(!password_pattern.test(values.password)){
-    error.password = "Password is wrong"
-}else{
-    error.password = ""
-}
-return error;
+  return error;
 }
 
 export default Validation;
